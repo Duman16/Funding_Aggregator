@@ -1,12 +1,13 @@
 import asyncio
 import os
+
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.main import app
 from app.database import Base, get_db
+from app.main import app
 
 # Берём URL напрямую из ENV — та же БД что создана в CI
 TEST_DB_URL = (
@@ -19,9 +20,7 @@ TEST_DB_URL = (
 )
 
 test_engine = create_async_engine(TEST_DB_URL, echo=False)
-TestSessionLocal = async_sessionmaker(
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
+TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 @pytest.fixture(scope="session")
