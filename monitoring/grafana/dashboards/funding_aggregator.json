@@ -1,0 +1,131 @@
+{
+  "id": null,
+  "uid": "funding-aggregator-main",
+  "title": "Funding Aggregator — Service Dashboard",
+  "tags": ["fastapi", "funding", "grants"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (RPS)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "sum(rate(http_requests_total{job=\"funding_aggregator\"}[1m]))",
+        "legendFormat": "RPS"
+      }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "colorMode": "background" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{"color":"green","value":null},{"color":"yellow","value":50},{"color":"red","value":100}] } } }
+    },
+    {
+      "id": 2,
+      "title": "Error Rate (%)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "sum(rate(http_requests_total{job=\"funding_aggregator\",status=~\"5..\"}[1m])) / sum(rate(http_requests_total{job=\"funding_aggregator\"}[1m])) * 100",
+        "legendFormat": "Error %"
+      }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "steps": [{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":5}] } } }
+    },
+    {
+      "id": 3,
+      "title": "P95 Latency (ms)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"funding_aggregator\"}[5m])) by (le)) * 1000",
+        "legendFormat": "P95"
+      }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "unit": "ms", "thresholds": { "steps": [{"color":"green","value":null},{"color":"yellow","value":200},{"color":"red","value":500}] } } }
+    },
+    {
+      "id": 4,
+      "title": "Active Requests",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "sum(http_requests_in_progress{job=\"funding_aggregator\"})",
+        "legendFormat": "In Progress"
+      }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "HTTP Request Rate by Endpoint",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "sum by (handler) (rate(http_requests_total{job=\"funding_aggregator\"}[1m]))",
+        "legendFormat": "{{handler}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 6,
+      "title": "Response Time Percentiles",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"funding_aggregator\"}[5m])) by (le)) * 1000",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket{job=\"funding_aggregator\"}[5m])) by (le)) * 1000",
+          "legendFormat": "P90"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"funding_aggregator\"}[5m])) by (le)) * 1000",
+          "legendFormat": "P95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"funding_aggregator\"}[5m])) by (le)) * 1000",
+          "legendFormat": "P99"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 7,
+      "title": "HTTP Status Codes",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "sum by (status) (rate(http_requests_total{job=\"funding_aggregator\"}[1m]))",
+        "legendFormat": "HTTP {{status}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } }
+    },
+    {
+      "id": 8,
+      "title": "Requests by Method",
+      "type": "piechart",
+      "gridPos": { "x": 12, "y": 12, "w": 6, "h": 8 },
+      "targets": [{
+        "expr": "sum by (method) (rate(http_requests_total{job=\"funding_aggregator\"}[5m]))",
+        "legendFormat": "{{method}}"
+      }]
+    },
+    {
+      "id": 9,
+      "title": "Scrape Logs (Last Collections)",
+      "type": "timeseries",
+      "gridPos": { "x": 18, "y": 12, "w": 6, "h": 8 },
+      "targets": [{
+        "expr": "rate(http_requests_total{job=\"funding_aggregator\",handler=~\".*/collect/.*\"}[5m])",
+        "legendFormat": "Collection triggers"
+      }],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    }
+  ]
+}
