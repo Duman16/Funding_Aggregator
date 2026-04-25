@@ -3,7 +3,7 @@ import os
 
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base, get_db
@@ -18,12 +18,7 @@ TEST_DB_URL = (
     f"{os.getenv('POSTGRES_DB', 'funding_aggregator')}"
 )
 
-test_engine = create_async_engine(
-    TEST_DB_URL,
-    echo=False,
-    pool_size=5,
-    max_overflow=10,
-)
+test_engine = create_async_engine(TEST_DB_URL, echo=False)
 TestSessionLocal = async_sessionmaker(
     test_engine,
     class_=AsyncSession,
@@ -46,19 +41,16 @@ async def setup_db():
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
     await test_engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session():
-    async with test_engine.connect() as conn:
-        await conn.begin()
-        session = AsyncSession(bind=conn, expire_on_commit=False)
-        try:
-            yield session
-        finally:
-            await session.close()
-            await conn.rollback()
+    async with TestSessionLocal() as session:
+        yield session
+        await session.rollback()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -75,14 +67,14 @@ async def client(db_session):
 
 @pytest_asyncio.fixture(scope="function")
 async def auth_client(client):
-    """Client with a registered and logged-in user."""
+    """Client with registered and logged-in user."""
     await client.post(
         "/api/v1/auth/register",
-        json={"email": "test@example.com", "password": "testpass123"},
+        json={"email": "authtest@example.com", "password": "testpass123"},
     )
     resp = await client.post(
         "/api/v1/auth/login",
-        json={"email": "test@example.com", "password": "testpass123"},
+        json={"email": "authtest@example.com", "password": "testpass123"},
     )
     token = resp.json()["access_token"]
     client.headers.update({"Authorization": f"Bearer {token}"})
