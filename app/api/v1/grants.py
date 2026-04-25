@@ -1,18 +1,17 @@
-from typing import Optional
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import String, and_, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, and_, cast, String
 from sqlalchemy.orm import selectinload
 
-from app.database import get_db
-from app.models.grant import Grant, GrantCategory
-from app.models.category import Category
-from app.schemas.grant import GrantOut, GrantListOut
 from app.auth.dependencies import get_current_user
+from app.database import get_db
+from app.models.category import Category
+from app.models.grant import Grant, GrantCategory
+from app.schemas.grant import GrantListOut, GrantOut
 
 router = APIRouter(prefix="/grants", tags=["Grants"])
 
@@ -20,15 +19,15 @@ AVAILABLE_SOURCES = ["grants_gov", "nih_reporter", "usa_spending"]
 
 
 def _build_query(
-    search: Optional[str] = None,
-    source: Optional[str] = None,
-    status_filter: Optional[str] = None,
-    agency_name: Optional[str] = None,
-    category_slug: Optional[str] = None,
-    deadline_from: Optional[date] = None,
-    deadline_to: Optional[date] = None,
-    amount_min: Optional[Decimal] = None,
-    amount_max: Optional[Decimal] = None,
+    search: str | None = None,
+    source: str | None = None,
+    status_filter: str | None = None,
+    agency_name: str | None = None,
+    category_slug: str | None = None,
+    deadline_from: date | None = None,
+    deadline_to: date | None = None,
+    amount_min: Decimal | None = None,
+    amount_max: Decimal | None = None,
 ):
     """Build a filtered SQLAlchemy query for grants."""
     query = select(Grant).options(
@@ -65,14 +64,10 @@ def _build_query(
         conditions.append(Grant.deadline <= deadline_to)
 
     if amount_min is not None:
-        conditions.append(
-            or_(Grant.amount_max >= amount_min, Grant.amount_min >= amount_min)
-        )
+        conditions.append(or_(Grant.amount_max >= amount_min, Grant.amount_min >= amount_min))
 
     if amount_max is not None:
-        conditions.append(
-            or_(Grant.amount_min <= amount_max, Grant.amount_max <= amount_max)
-        )
+        conditions.append(or_(Grant.amount_min <= amount_max, Grant.amount_max <= amount_max))
 
     if category_slug:
         query = query.join(Grant.categories).join(GrantCategory.category)
@@ -86,24 +81,31 @@ def _build_query(
 
 @router.get("", response_model=GrantListOut, summary="List grants with filters")
 async def list_grants(
-    search: Optional[str] = Query(None, description="Full-text search query"),
-    source: Optional[str] = Query(None, description="Data source (grants_gov, nih_reporter, usa_spending)"),
-    status: Optional[str] = Query(None, description="Grant status (open, forecasted, closed)"),
-    agency_name: Optional[str] = Query(None, description="Agency name (partial match)"),
-    category_slug: Optional[str] = Query(None, description="Category slug"),
-    deadline_from: Optional[date] = Query(None, description="Deadline from (YYYY-MM-DD)"),
-    deadline_to: Optional[date] = Query(None, description="Deadline to (YYYY-MM-DD)"),
-    amount_min: Optional[Decimal] = Query(None, description="Minimum grant amount"),
-    amount_max: Optional[Decimal] = Query(None, description="Maximum grant amount"),
+    search: str | None = Query(None, description="Full-text search query"),
+    source: str | None = Query(
+        None, description="Data source (grants_gov, nih_reporter, usa_spending)"
+    ),
+    status: str | None = Query(None, description="Grant status (open, forecasted, closed)"),
+    agency_name: str | None = Query(None, description="Agency name (partial match)"),
+    category_slug: str | None = Query(None, description="Category slug"),
+    deadline_from: date | None = Query(None, description="Deadline from (YYYY-MM-DD)"),
+    deadline_to: date | None = Query(None, description="Deadline to (YYYY-MM-DD)"),
+    amount_min: Decimal | None = Query(None, description="Minimum grant amount"),
+    amount_max: Decimal | None = Query(None, description="Maximum grant amount"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
 ):
     query = _build_query(
-        search=search, source=source, status_filter=status,
-        agency_name=agency_name, category_slug=category_slug,
-        deadline_from=deadline_from, deadline_to=deadline_to,
-        amount_min=amount_min, amount_max=amount_max,
+        search=search,
+        source=source,
+        status_filter=status,
+        agency_name=agency_name,
+        category_slug=category_slug,
+        deadline_from=deadline_from,
+        deadline_to=deadline_to,
+        amount_min=amount_min,
+        amount_max=amount_max,
     )
 
     count_query = select(func.count()).select_from(query.subquery())

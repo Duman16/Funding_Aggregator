@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.v1 import grants, auth, categories, health
+
+from app.api.v1 import auth, categories, grants, health
 
 api_router = APIRouter()
 api_router.include_router(health.router)

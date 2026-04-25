@@ -1,6 +1,6 @@
 import uuid
+
 import pytest
-from sqlalchemy import insert
 
 from app.models.grant import Grant
 

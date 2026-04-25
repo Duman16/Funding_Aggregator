@@ -1,13 +1,13 @@
 import asyncio
 import random
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
-from typing import List, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 import structlog
 from fake_useragent import UserAgent
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import settings
 
@@ -30,7 +30,7 @@ class BaseCollector(ABC):
             "started_at": None,
         }
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         return {
             "User-Agent": ua.random,
             "Accept": "application/json, text/html,*/*",
@@ -70,12 +70,12 @@ class BaseCollector(ABC):
         return response
 
     @abstractmethod
-    async def collect(self) -> List[Dict[str, Any]]:
+    async def collect(self) -> list[dict[str, Any]]:
         """Collect raw data and return list of grant dicts."""
         pass
 
-    async def run(self) -> Dict[str, Any]:
-        self.stats["started_at"] = datetime.now(timezone.utc)
+    async def run(self) -> dict[str, Any]:
+        self.stats["started_at"] = datetime.now(UTC)
         log = logger.bind(source=self.source_name)
 
         async with httpx.AsyncClient(follow_redirects=True) as client:

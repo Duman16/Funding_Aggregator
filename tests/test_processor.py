@@ -1,8 +1,12 @@
-import pytest
 from datetime import date
+
 from app.processor.cleaner import (
-    clean_html, clean_title, extract_keywords,
-    parse_date, parse_amount, normalize_status,
+    clean_html,
+    clean_title,
+    extract_keywords,
+    normalize_status,
+    parse_amount,
+    parse_date,
 )
 
 

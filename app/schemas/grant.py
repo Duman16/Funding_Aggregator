@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel, HttpUrl, Field
+
+from pydantic import BaseModel, Field
 
 
 class CategoryOut(BaseModel):
@@ -15,16 +15,16 @@ class CategoryOut(BaseModel):
 
 class GrantBase(BaseModel):
     title: str
-    description: Optional[str] = None
-    opportunity_number: Optional[str] = None
-    agency_name: Optional[str] = None
-    posted_date: Optional[date] = None
-    deadline: Optional[date] = None
-    amount_min: Optional[Decimal] = None
-    amount_max: Optional[Decimal] = None
+    description: str | None = None
+    opportunity_number: str | None = None
+    agency_name: str | None = None
+    posted_date: date | None = None
+    deadline: date | None = None
+    amount_min: Decimal | None = None
+    amount_max: Decimal | None = None
     status: str = "open"
-    eligibility: Optional[str] = None
-    keywords: Optional[List[str]] = None
+    eligibility: str | None = None
+    keywords: list[str] | None = None
     url: str
 
 
@@ -32,17 +32,17 @@ class GrantOut(GrantBase):
     id: UUID
     external_id: str
     source: str
-    agency_code: Optional[str] = None
+    agency_code: str | None = None
     is_processed: bool
     created_at: datetime
     updated_at: datetime
-    categories: List[CategoryOut] = []
+    categories: list[CategoryOut] = []
 
     model_config = {"from_attributes": True}
 
 
 class GrantListOut(BaseModel):
-    items: List[GrantOut]
+    items: list[GrantOut]
     total: int
     page: int
     per_page: int
@@ -50,14 +50,14 @@ class GrantListOut(BaseModel):
 
 
 class GrantFilter(BaseModel):
-    search: Optional[str] = None
-    source: Optional[str] = None
-    status: Optional[str] = None
-    agency_name: Optional[str] = None
-    category_slug: Optional[str] = None
-    deadline_from: Optional[date] = None
-    deadline_to: Optional[date] = None
-    amount_min: Optional[Decimal] = None
-    amount_max: Optional[Decimal] = None
+    search: str | None = None
+    source: str | None = None
+    status: str | None = None
+    agency_name: str | None = None
+    category_slug: str | None = None
+    deadline_from: date | None = None
+    deadline_to: date | None = None
+    amount_min: Decimal | None = None
+    amount_max: Decimal | None = None
     page: int = Field(default=1, ge=1)
     per_page: int = Field(default=20, ge=1, le=100)

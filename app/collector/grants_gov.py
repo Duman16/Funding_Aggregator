@@ -1,10 +1,9 @@
 import json
-from typing import List, Dict, Any
+from typing import Any
 
 import structlog
 
 from app.collector.base import BaseCollector
-from app.config import settings
 
 logger = structlog.get_logger()
 
@@ -21,8 +20,8 @@ class GrantsGovCollector(BaseCollector):
     source_name = "grants_gov"
     PAGE_SIZE = 25
 
-    async def collect(self) -> List[Dict[str, Any]]:
-        all_grants: List[Dict[str, Any]] = []
+    async def collect(self) -> list[dict[str, Any]]:
+        all_grants: list[dict[str, Any]] = []
 
         # Fetch multiple pages to get 100+ records
         for start_record in range(0, 100, self.PAGE_SIZE):
@@ -34,7 +33,7 @@ class GrantsGovCollector(BaseCollector):
         logger.info("grants_gov.collected", total=len(all_grants))
         return all_grants
 
-    async def _fetch_page(self, start_record: int = 0) -> List[Dict[str, Any]]:
+    async def _fetch_page(self, start_record: int = 0) -> list[dict[str, Any]]:
         payload = {
             "startRecordNum": start_record,
             "rows": self.PAGE_SIZE,
@@ -55,7 +54,7 @@ class GrantsGovCollector(BaseCollector):
             logger.error("grants_gov.page_error", start=start_record, error=str(e))
             return []
 
-    def _normalize(self, raw: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize(self, raw: dict[str, Any]) -> dict[str, Any]:
         """Normalize a single Grants.gov opportunity to our schema."""
         return {
             "external_id": str(raw.get("id", "")),

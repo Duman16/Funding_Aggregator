@@ -4,7 +4,8 @@ Docs: https://api.usaspending.gov/
 No API key required — fully open government data.
 Collects federal grant awards (assistance listings).
 """
-from typing import List, Dict, Any
+
+from typing import Any
 
 import structlog
 
@@ -24,8 +25,8 @@ class USASpendingCollector(BaseCollector):
     source_name = "usa_spending"
     PAGE_SIZE = 50
 
-    async def collect(self) -> List[Dict[str, Any]]:
-        all_grants: List[Dict[str, Any]] = []
+    async def collect(self) -> list[dict[str, Any]]:
+        all_grants: list[dict[str, Any]] = []
 
         for page in range(1, 4):  # 3 pages × 50 = 150 records max
             page_grants = await self._fetch_page(page)
@@ -36,13 +37,11 @@ class USASpendingCollector(BaseCollector):
         logger.info("usa_spending.collected", total=len(all_grants))
         return all_grants
 
-    async def _fetch_page(self, page: int = 1) -> List[Dict[str, Any]]:
+    async def _fetch_page(self, page: int = 1) -> list[dict[str, Any]]:
         payload = {
             "filters": {
                 "award_type_codes": ["02", "03", "04", "05"],  # grants only
-                "time_period": [
-                    {"start_date": "2024-01-01", "end_date": "2025-12-31"}
-                ],
+                "time_period": [{"start_date": "2024-01-01", "end_date": "2025-12-31"}],
             },
             "fields": [
                 "Award ID",
@@ -78,7 +77,7 @@ class USASpendingCollector(BaseCollector):
             logger.error("usa_spending.page_error", page=page, error=str(e))
             return []
 
-    def _normalize(self, raw: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize(self, raw: dict[str, Any]) -> dict[str, Any]:
         """Normalize a USASpending award to our Grant schema."""
         award_id = str(raw.get("Award ID", "")).strip()
         amount = raw.get("Award Amount")
@@ -105,7 +104,7 @@ class USASpendingCollector(BaseCollector):
         }
 
     @staticmethod
-    def _build_title(raw: Dict[str, Any]) -> str:
+    def _build_title(raw: dict[str, Any]) -> str:
         """Build a meaningful title from available fields."""
         recipient = raw.get("Recipient Name", "")
         agency = raw.get("Awarding Sub Agency", raw.get("Awarding Agency", ""))

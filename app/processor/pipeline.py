@@ -1,16 +1,20 @@
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.grant import Grant, GrantCategory
 from app.models.category import Category
+from app.models.grant import Grant, GrantCategory
 from app.models.scrape_log import ScrapeLog
 from app.processor.cleaner import (
-    clean_title, clean_html, extract_keywords,
-    parse_date, parse_amount, normalize_status,
+    clean_html,
+    clean_title,
+    extract_keywords,
+    normalize_status,
+    parse_amount,
+    parse_date,
 )
 
 logger = structlog.get_logger()
@@ -30,18 +34,23 @@ CATEGORY_RULES = [
 ]
 
 
-async def _get_or_create_category(db: AsyncSession, slug: str) -> Optional[Category]:
+async def _get_or_create_category(db: AsyncSession, slug: str) -> Category | None:
     result = await db.execute(select(Category).where(Category.slug == slug))
     cat = result.scalar_one_or_none()
     if cat:
         return cat
     # Map slug to display name
     name_map = {
-        "health": "Health & Medicine", "science": "Science & Research",
-        "technology": "Technology", "education": "Education",
-        "environment": "Environment & Energy", "social": "Social & Community",
-        "arts": "Arts & Humanities", "agriculture": "Agriculture & Food",
-        "defense": "Defense & Security", "international": "International",
+        "health": "Health & Medicine",
+        "science": "Science & Research",
+        "technology": "Technology",
+        "education": "Education",
+        "environment": "Environment & Energy",
+        "social": "Social & Community",
+        "arts": "Arts & Humanities",
+        "agriculture": "Agriculture & Food",
+        "defense": "Defense & Security",
+        "international": "International",
     }
     cat = Category(slug=slug, name=name_map.get(slug, slug.title()))
     db.add(cat)
@@ -49,7 +58,7 @@ async def _get_or_create_category(db: AsyncSession, slug: str) -> Optional[Categ
     return cat
 
 
-def _infer_categories(title: str, description: str) -> List[str]:
+def _infer_categories(title: str, description: str) -> list[str]:
     text = f"{title} {description}".lower()
     found = []
     for keywords, slug in CATEGORY_RULES:
@@ -58,7 +67,7 @@ def _infer_categories(title: str, description: str) -> List[str]:
     return found[:3]  # cap at 3 categories per grant
 
 
-async def process_grant(db: AsyncSession, raw: Dict[str, Any]) -> tuple[str, Grant]:
+async def process_grant(db: AsyncSession, raw: dict[str, Any]) -> tuple[str, Grant]:
     """
     Process a single raw grant dict: clean, normalize, upsert into DB.
     Returns ('created' | 'updated' | 'skipped', grant_object)
@@ -71,9 +80,7 @@ async def process_grant(db: AsyncSession, raw: Dict[str, Any]) -> tuple[str, Gra
 
     # Check for existing record
     result = await db.execute(
-        select(Grant).where(
-            and_(Grant.external_id == external_id, Grant.source == source)
-        )
+        select(Grant).where(and_(Grant.external_id == external_id, Grant.source == source))
     )
     grant = result.scalar_one_or_none()
     action = "updated" if grant else "created"
@@ -125,11 +132,11 @@ async def process_grant(db: AsyncSession, raw: Dict[str, Any]) -> tuple[str, Gra
 
 async def run_pipeline(
     db: AsyncSession,
-    raw_data: List[Dict[str, Any]],
+    raw_data: list[dict[str, Any]],
     source: str,
 ) -> ScrapeLog:
     """Run the full processing pipeline and return a ScrapeLog."""
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     log = logger.bind(source=source)
     log.info("pipeline.started", total=len(raw_data))
 
@@ -152,7 +159,7 @@ async def run_pipeline(
         records_new=counts["created"],
         records_updated=counts["updated"],
         started_at=started_at,
-        finished_at=datetime.now(timezone.utc),
+        finished_at=datetime.now(UTC),
     )
     db.add(scrape_log)
     await db.commit()

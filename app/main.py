@@ -1,13 +1,13 @@
-import structlog
 from contextlib import asynccontextmanager
 
+import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.config import settings
 from app.api.v1 import api_router
+from app.config import settings
 
 logger = structlog.get_logger()
 

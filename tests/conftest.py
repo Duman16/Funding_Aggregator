@@ -1,22 +1,19 @@
 import asyncio
+
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.main import app
-from app.database import Base, get_db
 from app.config import settings
+from app.database import Base, get_db
+from app.main import app
 
 # Use a separate test database
-TEST_DB_URL = settings.DATABASE_URL.replace(
-    f"/{settings.POSTGRES_DB}", "/funding_aggregator_test"
-)
+TEST_DB_URL = settings.DATABASE_URL.replace(f"/{settings.POSTGRES_DB}", "/funding_aggregator_test")
 
 test_engine = create_async_engine(TEST_DB_URL, echo=False)
-TestSessionLocal = async_sessionmaker(
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
+TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 @pytest.fixture(scope="session")

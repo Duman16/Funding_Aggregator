@@ -1,30 +1,111 @@
 import re
 from datetime import date, datetime
-from typing import Optional, List
-
 
 # Common stop words for keyword extraction
 _STOP_WORDS = {
-    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-    "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
-    "have", "has", "had", "do", "does", "did", "will", "would", "could",
-    "should", "may", "might", "shall", "can", "this", "that", "these",
-    "those", "it", "its", "we", "our", "you", "your", "they", "their",
-    "all", "any", "each", "more", "also", "other", "such", "than", "as",
-    "not", "no", "nor", "so", "yet", "both", "either", "neither", "while",
-    "if", "unless", "although", "because", "since", "until", "when",
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "shall",
+    "can",
+    "this",
+    "that",
+    "these",
+    "those",
+    "it",
+    "its",
+    "we",
+    "our",
+    "you",
+    "your",
+    "they",
+    "their",
+    "all",
+    "any",
+    "each",
+    "more",
+    "also",
+    "other",
+    "such",
+    "than",
+    "as",
+    "not",
+    "no",
+    "nor",
+    "so",
+    "yet",
+    "both",
+    "either",
+    "neither",
+    "while",
+    "if",
+    "unless",
+    "although",
+    "because",
+    "since",
+    "until",
+    "when",
 }
 
 # Grant-specific domain keywords to boost
 _DOMAIN_KEYWORDS = {
-    "research", "funding", "grant", "award", "scholarship", "fellowship",
-    "project", "program", "initiative", "innovation", "development",
-    "health", "medical", "science", "technology", "education", "community",
-    "environment", "energy", "agriculture", "defense", "arts", "humanities",
+    "research",
+    "funding",
+    "grant",
+    "award",
+    "scholarship",
+    "fellowship",
+    "project",
+    "program",
+    "initiative",
+    "innovation",
+    "development",
+    "health",
+    "medical",
+    "science",
+    "technology",
+    "education",
+    "community",
+    "environment",
+    "energy",
+    "agriculture",
+    "defense",
+    "arts",
+    "humanities",
 }
 
 
-def clean_html(text: Optional[str]) -> Optional[str]:
+def clean_html(text: str | None) -> str | None:
     """Remove HTML tags and normalize whitespace."""
     if not text:
         return None
@@ -32,8 +113,12 @@ def clean_html(text: Optional[str]) -> Optional[str]:
     text = re.sub(r"<[^>]+>", " ", text)
     # Decode common HTML entities
     replacements = {
-        "&amp;": "&", "&lt;": "<", "&gt;": ">",
-        "&nbsp;": " ", "&quot;": '"', "&#39;": "'",
+        "&amp;": "&",
+        "&lt;": "<",
+        "&gt;": ">",
+        "&nbsp;": " ",
+        "&quot;": '"',
+        "&#39;": "'",
     }
     for entity, char in replacements.items():
         text = text.replace(entity, char)
@@ -42,7 +127,7 @@ def clean_html(text: Optional[str]) -> Optional[str]:
     return text if text else None
 
 
-def clean_title(title: Optional[str]) -> Optional[str]:
+def clean_title(title: str | None) -> str | None:
     """Clean and normalize a grant title."""
     if not title:
         return None
@@ -53,7 +138,7 @@ def clean_title(title: Optional[str]) -> Optional[str]:
     return title[:500].strip() if title else None
 
 
-def extract_keywords(text: Optional[str], max_keywords: int = 15) -> List[str]:
+def extract_keywords(text: str | None, max_keywords: int = 15) -> list[str]:
     """Extract meaningful keywords from text using frequency + domain boosting."""
     if not text:
         return []
@@ -74,7 +159,7 @@ def extract_keywords(text: Optional[str], max_keywords: int = 15) -> List[str]:
     return [w for w, _ in sorted_words[:max_keywords]]
 
 
-def parse_date(value: Optional[str | date]) -> Optional[date]:
+def parse_date(value: str | date | None) -> date | None:
     """Parse a date from various string formats."""
     if value is None:
         return None
@@ -82,9 +167,14 @@ def parse_date(value: Optional[str | date]) -> Optional[date]:
         return value
 
     formats = [
-        "%m/%d/%Y", "%Y-%m-%d", "%d-%m-%Y",
-        "%Y/%m/%d", "%B %d, %Y", "%b %d, %Y",
-        "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ",
+        "%m/%d/%Y",
+        "%Y-%m-%d",
+        "%d-%m-%Y",
+        "%Y/%m/%d",
+        "%B %d, %Y",
+        "%b %d, %Y",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%SZ",
     ]
     for fmt in formats:
         try:
@@ -94,11 +184,11 @@ def parse_date(value: Optional[str | date]) -> Optional[date]:
     return None
 
 
-def parse_amount(value) -> Optional[float]:
+def parse_amount(value) -> float | None:
     """Parse a monetary amount from various formats."""
     if value is None:
         return None
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return float(value) if value > 0 else None
     cleaned = re.sub(r"[^\d.]", "", str(value))
     try:
@@ -108,7 +198,7 @@ def parse_amount(value) -> Optional[float]:
         return None
 
 
-def normalize_status(status: Optional[str]) -> str:
+def normalize_status(status: str | None) -> str:
     """Normalize grant status to a known set of values."""
     if not status:
         return "unknown"

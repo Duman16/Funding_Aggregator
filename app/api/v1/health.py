@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text, select, func
 
 from app.database import get_db
 from app.models.grant import Grant
@@ -30,14 +30,10 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
         await db.execute(select(func.count()).select_from(Grant).where(Grant.status == "open"))
     ).scalar_one()
     sources = (
-        await db.execute(
-            select(Grant.source, func.count(Grant.id)).group_by(Grant.source)
-        )
+        await db.execute(select(Grant.source, func.count(Grant.id)).group_by(Grant.source))
     ).all()
     last_scrape = (
-        await db.execute(
-            select(ScrapeLog).order_by(ScrapeLog.started_at.desc()).limit(1)
-        )
+        await db.execute(select(ScrapeLog).order_by(ScrapeLog.started_at.desc()).limit(1))
     ).scalar_one_or_none()
 
     return {
@@ -49,5 +45,7 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
             "status": last_scrape.status,
             "records_new": last_scrape.records_new,
             "started_at": last_scrape.started_at,
-        } if last_scrape else None,
+        }
+        if last_scrape
+        else None,
     }

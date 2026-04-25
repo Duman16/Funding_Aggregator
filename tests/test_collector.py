@@ -1,4 +1,3 @@
-import pytest
 from app.collector.grants_gov import GrantsGovCollector
 from app.collector.nih_reporter import NIHReporterCollector
 
@@ -77,6 +76,7 @@ class TestNIHCollector:
 class TestUSASpendingCollector:
     def setup_method(self):
         from app.collector.usa_spending import USASpendingCollector
+
         self.collector = USASpendingCollector()
 
     def test_normalize_full(self):

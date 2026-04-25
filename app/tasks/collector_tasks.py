@@ -1,5 +1,7 @@
 import asyncio
+
 import structlog
+
 from app.tasks.celery_app import celery_app
 
 logger = structlog.get_logger()
@@ -49,8 +51,8 @@ def collect_usa_spending(self):
 
 async def _collect_grants_gov_async():
     from app.collector.grants_gov import GrantsGovCollector
-    from app.processor.pipeline import run_pipeline
     from app.database import AsyncSessionLocal
+    from app.processor.pipeline import run_pipeline
 
     collector = GrantsGovCollector()
     result = await collector.run()
@@ -69,8 +71,8 @@ async def _collect_grants_gov_async():
 
 async def _collect_nih_async():
     from app.collector.nih_reporter import NIHReporterCollector
-    from app.processor.pipeline import run_pipeline
     from app.database import AsyncSessionLocal
+    from app.processor.pipeline import run_pipeline
 
     collector = NIHReporterCollector()
     result = await collector.run()
@@ -89,8 +91,8 @@ async def _collect_nih_async():
 
 async def _collect_usa_spending_async():
     from app.collector.usa_spending import USASpendingCollector
-    from app.processor.pipeline import run_pipeline
     from app.database import AsyncSessionLocal
+    from app.processor.pipeline import run_pipeline
 
     collector = USASpendingCollector()
     result = await collector.run()

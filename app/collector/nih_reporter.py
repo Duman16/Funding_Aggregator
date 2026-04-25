@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Any
 
 import structlog
 
@@ -19,8 +19,8 @@ class NIHReporterCollector(BaseCollector):
     source_name = "nih_reporter"
     PAGE_SIZE = 50
 
-    async def collect(self) -> List[Dict[str, Any]]:
-        all_grants: List[Dict[str, Any]] = []
+    async def collect(self) -> list[dict[str, Any]]:
+        all_grants: list[dict[str, Any]] = []
 
         for offset in range(0, 100, self.PAGE_SIZE):
             page = await self._fetch_page(offset)
@@ -31,7 +31,7 @@ class NIHReporterCollector(BaseCollector):
         logger.info("nih.collected", total=len(all_grants))
         return all_grants
 
-    async def _fetch_page(self, offset: int = 0) -> List[Dict[str, Any]]:
+    async def _fetch_page(self, offset: int = 0) -> list[dict[str, Any]]:
         payload = {
             "criteria": {
                 "fiscal_years": [2024, 2025],
@@ -51,7 +51,7 @@ class NIHReporterCollector(BaseCollector):
             logger.error("nih.page_error", offset=offset, error=str(e))
             return []
 
-    def _normalize(self, raw: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize(self, raw: dict[str, Any]) -> dict[str, Any]:
         core = raw.get("project_title", "")
         appl_id = str(raw.get("appl_id", ""))
         return {
@@ -60,7 +60,9 @@ class NIHReporterCollector(BaseCollector):
             "title": core or "NIH Research Project",
             "description": raw.get("abstract_text", ""),
             "opportunity_number": raw.get("full_project_num", ""),
-            "agency_name": raw.get("agency_ic_fundings", [{}])[0].get("name", "NIH") if raw.get("agency_ic_fundings") else "NIH",
+            "agency_name": raw.get("agency_ic_fundings", [{}])[0].get("name", "NIH")
+            if raw.get("agency_ic_fundings")
+            else "NIH",
             "agency_code": "NIH",
             "posted_date": raw.get("project_start_date", None),
             "deadline": raw.get("project_end_date", None),
