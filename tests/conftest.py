@@ -5,8 +5,9 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
-from app.database import Base, get_db
+from app.database import get_db
 from app.main import app
 
 TEST_DB_URL = (
@@ -18,7 +19,8 @@ TEST_DB_URL = (
     f"{os.getenv('POSTGRES_DB', 'funding_aggregator')}"
 )
 
-test_engine = create_async_engine(TEST_DB_URL, echo=False)
+# NullPool — каждый тест получает свежее соединение, нет конфликтов
+test_engine = create_async_engine(TEST_DB_URL, echo=False, poolclass=NullPool)
 TestSessionLocal = async_sessionmaker(
     test_engine,
     class_=AsyncSession,
@@ -33,17 +35,6 @@ def event_loop():
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
-
-
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def setup_db():
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await test_engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="function")
