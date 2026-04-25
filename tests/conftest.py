@@ -1,19 +1,27 @@
 import asyncio
-
+import os
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from app.config import settings
-from app.database import Base, get_db
 from app.main import app
+from app.database import Base, get_db
 
-# Use a separate test database
-TEST_DB_URL = settings.DATABASE_URL.replace(f"/{settings.POSTGRES_DB}", "/funding_aggregator_test")
+# Берём URL напрямую из ENV — та же БД что создана в CI
+TEST_DB_URL = (
+    f"postgresql+asyncpg://"
+    f"{os.getenv('POSTGRES_USER', 'postgres')}:"
+    f"{os.getenv('POSTGRES_PASSWORD', 'postgres')}@"
+    f"{os.getenv('POSTGRES_HOST', 'localhost')}:"
+    f"{os.getenv('POSTGRES_PORT', '5432')}/"
+    f"{os.getenv('POSTGRES_DB', 'funding_aggregator')}"
+)
 
 test_engine = create_async_engine(TEST_DB_URL, echo=False)
-TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+TestSessionLocal = async_sessionmaker(
+    test_engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 @pytest.fixture(scope="session")
