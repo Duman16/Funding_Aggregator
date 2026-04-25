@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.database import Base, get_db
 from app.main import app
 
-# Берём URL напрямую из ENV — та же БД что создана в CI
 TEST_DB_URL = (
     f"postgresql+asyncpg://"
     f"{os.getenv('POSTGRES_USER', 'postgres')}:"
@@ -19,8 +18,19 @@ TEST_DB_URL = (
     f"{os.getenv('POSTGRES_DB', 'funding_aggregator')}"
 )
 
-test_engine = create_async_engine(TEST_DB_URL, echo=False)
-TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+test_engine = create_async_engine(
+    TEST_DB_URL,
+    echo=False,
+    pool_size=5,
+    max_overflow=10,
+)
+TestSessionLocal = async_sessionmaker(
+    test_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
 
 
 @pytest.fixture(scope="session")
@@ -36,19 +46,22 @@ async def setup_db():
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
     await test_engine.dispose()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="function")
 async def db_session():
-    async with TestSessionLocal() as session:
-        yield session
-        await session.rollback()
+    async with test_engine.connect() as conn:
+        await conn.begin()
+        session = AsyncSession(bind=conn, expire_on_commit=False)
+        try:
+            yield session
+        finally:
+            await session.close()
+            await conn.rollback()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="function")
 async def client(db_session):
     async def override_get_db():
         yield db_session
@@ -60,7 +73,7 @@ async def client(db_session):
     app.dependency_overrides.clear()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="function")
 async def auth_client(client):
     """Client with a registered and logged-in user."""
     await client.post(
